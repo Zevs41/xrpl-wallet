@@ -1,41 +1,47 @@
 import {
-  CallHandler,
-  ExecutionContext,
   Injectable,
-  Logger,
   NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  Logger,
 } from '@nestjs/common';
-import { map, Observable, tap } from 'rxjs';
+import { Request } from 'express';
+import { Observable, throwError } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  constructor() {}
   private readonly logger = new Logger(LoggingInterceptor.name);
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request =
-      context.getType() === 'rpc'
-        ? context.switchToRpc().getData()
-        : context.switchToHttp().getRequest();
+    const requestDetails = this.getRequestDetails(context);
+    const requestLog = { req: requestDetails };
 
     return next.handle().pipe(
-      map((data) => data ?? {}),
-      tap(async (data) => {
-        this.logger.log({
-          req:
-            context.getType() === 'rpc'
-              ? request
-              : {
-                  method: request.method,
-                  url: request.url,
-                  body: request.body,
-                  query: request.query,
-                  params: request.params,
-                  headers: request.headers,
-                },
-          res: data,
-        });
+      tap((data) => {
+        this.logger.log({ ...requestLog, res: data });
+      }),
+      catchError((error) => {
+        this.logger.error({ ...requestLog, err: error });
+        return throwError(() => error);
       }),
     );
+  }
+
+  private getRequestDetails(context: ExecutionContext): Record<string, any> {
+    if (context.getType() === 'ws') {
+      const wsContext = context.switchToWs();
+      return {
+        eventName: wsContext.getPattern(),
+        eventData: wsContext.getData(),
+      };
+    } else {
+      const httpContext = context.switchToHttp();
+      const request = httpContext.getRequest<Request>();
+      return {
+        eventName: request.url,
+        eventData: request.body,
+      };
+    }
   }
 }

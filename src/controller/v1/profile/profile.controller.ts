@@ -68,7 +68,7 @@ export class ProfileController {
     );
   }
 
-  @Get('my')
+  @Get('')
   getMyProfile(@PayloadData() payloadData: JwtPayload): Promise<Profile> {
     return this.profileService.getMyProfile(payloadData.walletUuid);
   }

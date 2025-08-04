@@ -29,11 +29,16 @@ model Profile {
   avatarUrl String?
 
   createdAt DateTime  @default(now()) @db.Timestamptz
-  deletedAt DateTime? @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz
 
   walletUuid    String          @unique @db.Uuid
   wallet        Wallet          @relation(fields: [walletUuid], references: [uuid])
-  walletProdile WalletProfile[]
+  walletProfile WalletProfile[]
+
+  message Message[]
+
+  profileChat ProfileChat[]
+  attachment  Attachment[]
 }
 
 model Wallet {
@@ -44,7 +49,7 @@ model Wallet {
 
   profile            Profile?
   walletRefreshToken WalletRefreshToken[]
-  walletProdile      WalletProfile[]
+  walletProfile      WalletProfile[]
 }
 
 model WalletProfile {
@@ -58,7 +63,7 @@ model WalletProfile {
 
   visibility Boolean
 
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz
 
   @@unique([walletUuid, profileUuid])
 }
@@ -66,9 +71,66 @@ model WalletProfile {
 model WalletRefreshToken {
   token String @id @default(uuid())
 
-  wallet     Wallet @relation(fields: [walletUuid], references: [uuid])
   walletUuid String @db.Uuid
+  wallet     Wallet @relation(fields: [walletUuid], references: [uuid])
 
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  expDate   DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  expDate   DateTime @db.Timestamptz
+}
+
+model Chat {
+  uuid String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  attachment Attachment[]
+  message    Message[]
+
+  profileChat ProfileChat[]
+}
+
+model ProfileChat {
+  uuid String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  profile     Profile @relation(fields: [profileUuid], references: [uuid])
+  profileUuid String  @db.Uuid
+  chat        Chat    @relation(fields: [chatUuid], references: [uuid])
+  chatUuid    String  @db.Uuid
+
+  @@unique([profileUuid, chatUuid])
+}
+
+model Attachment {
+  uuid String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  chatUuid String @db.Uuid
+  chat     Chat   @relation(fields: [chatUuid], references: [uuid])
+
+  creatorProfileUuid String  @db.Uuid
+  creatorProfile     Profile @relation(fields: [creatorProfileUuid], references: [uuid])
+
+  fileUrl String
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+}
+
+enum MessageStatus {
+  delivered
+  readed
+}
+
+model Message {
+  uuid String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  text String
+
+  chatUuid String @db.Uuid
+  chat     Chat   @relation(fields: [chatUuid], references: [uuid])
+
+  creatorProfileUuid String  @db.Uuid
+  creatorProfile     Profile @relation(fields: [creatorProfileUuid], references: [uuid])
+
+  status MessageStatus @default(delivered)
+
+  createdAt DateTime @default(now()) @db.Timestamptz
 }

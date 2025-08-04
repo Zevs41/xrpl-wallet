@@ -26,4 +26,8 @@ export const errorsDeclaration: {
     httpCode: HttpStatus.INTERNAL_SERVER_ERROR,
     messageDebug: 'Database error',
   },
+  [EErrorCode.AlreadyAuthorized]: {
+    httpCode: HttpStatus.BAD_REQUEST,
+    messageDebug: 'User already authenticated',
+  }
 };

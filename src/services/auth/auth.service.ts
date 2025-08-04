@@ -96,6 +96,10 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
+  decodeJwt(jwtToken: string): JwtPayload {
+    return this.jwtService.decode(jwtToken);
+  }
+
   async refresh(data: ReqRefreshDto): Promise<ResRefreshDto> {
     const { token } = data;
     const oldToken =

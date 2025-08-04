@@ -12,11 +12,48 @@ import type { Request, Response } from 'express';
 import { BackendException } from '../backend.exception';
 import { EErrorCode } from '../enums/error-code.enum';
 import type { HttpMethod } from '../types/http-method.type';
+import { WebSocketClient } from 'src/common/web-socket/interface/web-socket-client.interface';
+import { WsExceptionDto } from '../dto/ws-exception.dto';
+import { WebSocketErrorResponse } from 'src/common/web-socket/interface/web-socket-response.interface';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
   catch(exception: BackendException | Error, host: ArgumentsHost): any {
+    if (host.getType() === 'ws') {
+      const ws = host.switchToWs();
+      const client = ws.getClient<WebSocketClient>();
+      const backendException: BackendException =
+        this.convertException(exception);
+
+
+      const res: WsExceptionDto = {
+        event: ws.getPattern(),
+        timestamp: new Date(),
+        code: backendException.code,
+        message: backendException.messageDebug, // socket cluster support
+        messageUI: backendException.message,
+        messageDebug: backendException.messageDebug,
+        data: backendException.data,
+      };
+
+      Logger.error('socket procedure error', {
+        reg: {
+          id: client.id,
+          headers: client.request.headers,
+          remoteAddress: client.conn.remoteAddress,
+        },
+        walletUuuid: client.data.walletUuid,
+        res,
+        stack: exception.stack,
+      });
+
+      const ackCallback = host.getArgByIndex(2);
+      if (ackCallback && typeof ackCallback === 'function') {
+        ackCallback(<WebSocketErrorResponse>{ error: res });
+      }
+      return;
+    }
     const ctx: HttpArgumentsHost = host.switchToHttp();
     const response: Response = ctx.getResponse<Response>();
     const request: Request = ctx.getRequest<Request>();

@@ -4,4 +4,5 @@ export enum EErrorCode {
   Unauthorized = '2',
   Database = '3',
   NotFound = '4',
+  AlreadyAuthorized = '5',
 }

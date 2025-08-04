@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: xrpl
+    ports:
+      - '5454:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis/redis-stack:7.4.0-v1
+    restart: always
+    ports:
+      - '6379:6379'
+    environment:
+      - REDIS_PASSWORD=1234
+      - REDIS_PORT=6379
+    volumes:
+      - redis-data:/root/redis
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    logging:
+      driver: local
+    ports:
+      - '9010:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: 12345678
+    volumes:
+      - minio-data:/data
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:

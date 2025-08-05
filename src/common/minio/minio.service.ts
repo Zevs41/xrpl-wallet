@@ -16,7 +16,11 @@ export class MinioClientService implements OnModuleInit {
   constructor(private readonly configService: ConfigService<IConfig>) {
     this.minioConfig = this.configService.getOrThrow<IConfigMinio>('minio');
 
-    this.minioClient = new Minio.Client({ ...this.minioConfig });
+    this.minioClient = new Minio.Client({
+      ...this.minioConfig,
+      accessKey: this.minioConfig.rootUser,
+      secretKey: this.minioConfig.rootPassword,
+    });
 
     this.baseBucket = this.minioConfig.bucketName;
   }
@@ -33,7 +37,24 @@ export class MinioClientService implements OnModuleInit {
     const exists = await this.minioClient.bucketExists(this.baseBucket);
 
     if (!exists) {
-      this.minioClient.makeBucket(this.baseBucket, '');
+      await this.minioClient.makeBucket(this.baseBucket);
+
+      const policy = {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: '*',
+            Action: ['s3:GetObject'],
+            Resource: [`arn:aws:s3:::${this.baseBucket}/*`],
+          },
+        ],
+      };
+
+      await this.minioClient.setBucketPolicy(
+        this.baseBucket,
+        JSON.stringify(policy),
+      );
     }
   }
 

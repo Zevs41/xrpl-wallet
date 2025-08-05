@@ -53,14 +53,13 @@ export class ChatService {
       client.data.profileUuid,
     );
 
-    const sockets = await server.fetchSockets();
-
-    const secondProfile = sockets.filter(
-      (socket) => socket.data.profileUuid === data.profileUuid,
+    const companion = await this.findConnectedClient(
+      server,
+      client.data.profileUuid,
     );
 
-    if (!!secondProfile.length)
-      secondProfile[0].emit(WSClientEvents.ChatCompanionConnected, {
+    if (companion)
+      companion.emit(WSClientEvents.ChatCompanionConnected, {
         chatUuid: chat.uuid,
       });
 
@@ -74,25 +73,21 @@ export class ChatService {
     client: WebSocketClient,
     data: ReqSendTextMessageDto,
   ) {
-    const sockets = await server.fetchSockets();
-
-    const secondProfile = sockets.filter(
-      (socket) => socket.data.profileUuid === client.data.companionProfileUuid,
+    const companion = await this.findConnectedClient(
+      server,
+      client.data.profileUuid,
     );
 
-    if (!!secondProfile.length) {
-      secondProfile[0].emit(WSClientEvents.ChatNewMessage, {
+    if (companion)
+      companion.emit(WSClientEvents.ChatNewMessage, {
         text: data.text,
       });
-    }
 
     await this.messageDomain.create({
       chatUuid: client.data.chatUuid,
       creatorProfileUuid: client.data.profileUuid,
       text: data.text,
-      status: !!secondProfile.length
-        ? MessageStatus.readed
-        : MessageStatus.delivered,
+      status: companion ? MessageStatus.readed : MessageStatus.delivered,
     });
   }
 
@@ -108,15 +103,28 @@ export class ChatService {
     server: Server<any, any, any, WebSocketClient['data']>,
     client: WebSocketClient,
   ) {
+    const companion = await this.findConnectedClient(
+      server,
+      client.data.profileUuid,
+    );
+
+    if (companion)
+      companion.emit(WSClientEvents.ChatCompanionDisconnected, {
+        chatUuid: client.data.chatUuid,
+      });
+  }
+
+  async findConnectedClient(
+    server,
+    profileUuid,
+  ): Promise<WebSocketClient | null> {
     const sockets = await server.fetchSockets();
 
     const secondProfile = sockets.filter(
-      (socket) => socket.data.profileUuid === client.data.companionProfileUuid,
+      (socket) => socket.data.profileUuid === profileUuid,
     );
 
-    if (!!secondProfile.length)
-      secondProfile[0].emit(WSClientEvents.ChatCompanionDisconnected, {
-        chatUuid: client.data.chatUuid,
-      });
+    if (!!secondProfile.length) return secondProfile[0];
+    else return null;
   }
 }

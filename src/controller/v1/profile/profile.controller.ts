@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
@@ -16,8 +17,7 @@ import { JwtPayload } from 'src/services/auth/types';
 import { ProfileService } from 'src/services/profile/profile.service';
 import { ReqCreateProfileDto } from './dto/req/create-profile.dto';
 import { ReqUpdateProfileDto } from './dto/req/update-profile.dto';
-import { Profile, WalletProfile } from '@prisma/client';
-import { ReqCreateWalletProfileDto } from './dto/req/create-wallet-profile.dto';
+import { Profile } from '@prisma/client';
 
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -41,31 +41,11 @@ export class ProfileController {
     return this.profileService.update(payload.walletUuid, data);
   }
 
-  @Post('wallet')
-  createWalletProfile(
-    @Body() data: ReqCreateWalletProfileDto,
-    @PayloadData() payload: JwtPayload,
-  ): Promise<WalletProfile> {
-    return this.profileService.createWalletProfile(payload.walletUuid, data);
-  }
-
-  @Patch('wallet')
-  updateWalletProfile(
-    @Body() data: ReqCreateWalletProfileDto,
-    @PayloadData() payload: JwtPayload,
-  ): Promise<WalletProfile> {
-    return this.profileService.updateWalletProfile(payload.walletUuid, data);
-  }
-
-  @Delete('wallet/:profileUuid')
-  deleteWalletProfile(
-    @Param('profileUuid') profileUuid: string,
-    @PayloadData() payload: JwtPayload,
-  ): Promise<WalletProfile> {
-    return this.profileService.deleteWalletProfile(
-      payload.walletUuid,
-      profileUuid,
-    );
+  @Get('/:profileUuid')
+  get(
+    @Param('profileUuid', ParseUUIDPipe) profileUuid: string,
+  ): Promise<Profile> {
+    return this.profileService.get(profileUuid);
   }
 
   @Get('')

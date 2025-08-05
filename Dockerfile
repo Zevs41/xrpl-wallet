@@ -14,7 +14,6 @@ WORKDIR /app
 COPY --from=builder /app/node_modules /app/node_modules
 COPY --from=builder /app/dist /app
 COPY --from=builder /app/prisma /app/prisma
-COPY --from=builder /app/.env /app/.env
 
 EXPOSE 3000
 

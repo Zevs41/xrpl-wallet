@@ -17,25 +17,8 @@ export class ProfileService {
     return this.profileDomain.update(walletUuid, data);
   }
 
-  createWalletProfile(
-    walletUuid: string,
-    data: ReqCreateWalletProfileDto,
-  ): Promise<WalletProfile> {
-    return this.profileDomain.createWalletProfile(walletUuid, data);
-  }
-
-  updateWalletProfile(
-    walletUuid: string,
-    data: ReqCreateWalletProfileDto,
-  ): Promise<WalletProfile> {
-    return this.profileDomain.updateWalletProfile(walletUuid, data);
-  }
-
-  deleteWalletProfile(
-    walletUuid: string,
-    profileUuid: string,
-  ): Promise<WalletProfile> {
-    return this.profileDomain.deleteWalletProfile(walletUuid, profileUuid);
+  get(profileUuid: string): Promise<Profile> {
+    return this.profileDomain.get(profileUuid);
   }
 
   getMyProfile(walletUuid: string): Promise<Profile> {

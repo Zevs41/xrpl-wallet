@@ -5,6 +5,8 @@ import { faker } from '@faker-js/faker';
 import { ReqUpdateProfileDto } from 'src/controller/v1/profile/dto/req/update-profile.dto';
 import { Profile, WalletProfile } from '@prisma/client';
 import { ReqCreateWalletProfileDto } from 'src/controller/v1/profile/dto/req/create-wallet-profile.dto';
+import { BackendException } from 'src/common/exception/backend.exception';
+import { EErrorCode } from 'src/common/exception/enums/error-code.enum';
 
 @Injectable()
 export class ProfileDomain {
@@ -61,10 +63,26 @@ export class ProfileDomain {
     });
   }
 
+  get(profileUuid: string): Promise<Profile> {
+    return this.prismaService.profile
+      .findUnique({
+        where: { uuid: profileUuid },
+      })
+      .then((data) => {
+        if (data === null) throw new BackendException(EErrorCode.NotFound);
+        return data;
+      });
+  }
+
   getMyProfile(walletUuid: string): Promise<Profile> {
-    return this.prismaService.profile.findUniqueOrThrow({
-      where: { walletUuid: walletUuid },
-    });
+    return this.prismaService.profile
+      .findUnique({
+        where: { walletUuid: walletUuid },
+      })
+      .then((data) => {
+        if (data === null) throw new BackendException(EErrorCode.NotFound);
+        return data;
+      });
   }
 
   async getUniqueUsername(): Promise<string> {

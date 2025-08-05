@@ -13,7 +13,7 @@ import type { WebSocketClient } from 'src/common/web-socket/interface/web-socket
 import { ReqConnectToChatDto } from './dto/req/req-connect-to-chat.dto';
 import { AdvancedWebSocketGateway } from 'src/common/decorator/advanced-web-socket-gateway.decorator';
 import { ChatService } from 'src/services/chat/chat.service';
-import { Chat } from '@prisma/client';
+import { Chat, Message } from '@prisma/client';
 import { ReqSendTextMessageDto } from './dto/req/req-send-text-message.dto';
 import { ReqSendFileMessageDto } from './dto/req/req-send-file-message.dto';
 
@@ -37,15 +37,15 @@ export class ChatGateway implements OnGatewayDisconnect {
   async sendTextMessage(
     @ConnectedSocket() client: WebSocketClient,
     @MessageBody() data: ReqSendTextMessageDto,
-  ): Promise<void> {
+  ): Promise<Message> {
     return this.chatService.sendTextMessage(this.server, client, data);
   }
 
-  @SubscribeMessage(WSServerEvents.SendTextMessage)
+  @SubscribeMessage(WSServerEvents.SendFileMessage)
   async sendFileMessage(
     @ConnectedSocket() client: WebSocketClient,
     @MessageBody() data: ReqSendFileMessageDto,
-  ): Promise<void> {
+  ): Promise<Message> {
     return this.chatService.sendFileMessage(this.server, client, data);
   }
 

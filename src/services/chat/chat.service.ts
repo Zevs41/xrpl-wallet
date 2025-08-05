@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { MessageStatus } from '@prisma/client';
+import { Message, MessageStatus } from '@prisma/client';
 import { Server } from 'socket.io';
 import { BackendException } from 'src/common/exception/backend.exception';
 import { EErrorCode } from 'src/common/exception/enums/error-code.enum';
 import { WSClientEvents } from 'src/common/web-socket/enums/web-socket.enum';
 import { WebSocketClient } from 'src/common/web-socket/interface/web-socket-client.interface';
 import { WebSocketService } from 'src/common/web-socket/web-socket.service';
+import { AttachmentDomain } from 'src/domains/attachment/attachment.domain';
 import { ChatDomain } from 'src/domains/chat/chat.domain';
 import { MessageDomain } from 'src/domains/message/message.domain';
 import { ReqConnectToChatDto } from 'src/gateways/chat/dto/req/req-connect-to-chat.dto';
@@ -17,6 +18,7 @@ export class ChatService {
   constructor(
     private readonly chatDomain: ChatDomain,
     private readonly messageDomain: MessageDomain,
+    private readonly attachmentDomain: AttachmentDomain,
     private readonly webSocketService: WebSocketService,
   ) {}
 
@@ -40,6 +42,8 @@ export class ChatService {
       data.profileUuid,
     );
 
+    console.log(clientData.profileUuid, data.profileUuid);
+
     if (!chat)
       chat = await this.chatDomain.createChatWithProfiles(
         clientData.profileUuid,
@@ -53,10 +57,7 @@ export class ChatService {
       client.data.profileUuid,
     );
 
-    const companion = await this.findConnectedClient(
-      server,
-      client.data.profileUuid,
-    );
+    const companion = await this.findConnectedClient(server, data.profileUuid);
 
     if (companion)
       companion.emit(WSClientEvents.ChatCompanionConnected, {
@@ -72,10 +73,10 @@ export class ChatService {
     server: Server<any, any, any, WebSocketClient['data']>,
     client: WebSocketClient,
     data: ReqSendTextMessageDto,
-  ) {
+  ): Promise<Message> {
     const companion = await this.findConnectedClient(
       server,
-      client.data.profileUuid,
+      client.data.companionProfileUuid,
     );
 
     if (companion)
@@ -83,7 +84,7 @@ export class ChatService {
         text: data.text,
       });
 
-    await this.messageDomain.create({
+    return this.messageDomain.create({
       chatUuid: client.data.chatUuid,
       creatorProfileUuid: client.data.profileUuid,
       text: data.text,
@@ -96,7 +97,17 @@ export class ChatService {
     client: WebSocketClient,
     data: ReqSendFileMessageDto,
   ) {
-    await this.sendTextMessage(server, client, { text: data.url });
+    const message = await this.sendTextMessage(server, client, {
+      text: data.url,
+    });
+
+    await this.attachmentDomain.create({
+      chatUuid: client.data.chatUuid,
+      creatorProfileUuid: client.data.profileUuid,
+      fileUrl: data.url,
+    });
+
+    return message;
   }
 
   async handleDisconnect(
@@ -105,7 +116,7 @@ export class ChatService {
   ) {
     const companion = await this.findConnectedClient(
       server,
-      client.data.profileUuid,
+      client.data.companionProfileUuid,
     );
 
     if (companion)

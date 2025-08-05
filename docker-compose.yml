@@ -19,10 +19,11 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=1234
 
-      - MINIO_ENDPOINT=minio
+      - MINIO_URL=http://localhost:9011
+      - MINIO_HOST=minio
       - MINIO_PORT=9000
       - MINIO_BUCKET_NAME=xrpl
-      - MINIO_USE_SSL=false
+      - MINIO_USE_SSL=0
       - MINIO_ACCESS_KEY=minio
       - MINIO_SECRET_KEY=12345678
 

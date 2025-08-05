@@ -60,14 +60,17 @@ export class MinioClientService implements OnModuleInit {
 
   async uploadFile(file: Express.Multer.File): Promise<ResFileDto> {
     const temp_filename = Date.now().toString();
+
     const hashedFileName = crypto
       .createHash('md5')
       .update(temp_filename)
       .digest('hex');
+
     const ext = file.originalname.substring(
       file.originalname.lastIndexOf('.'),
       file.originalname.length,
     );
+
     const filename = hashedFileName + ext;
 
     await this.minioClient.putObject(
